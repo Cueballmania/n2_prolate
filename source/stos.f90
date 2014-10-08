@@ -118,7 +118,7 @@ fileopen: IF (ierror == 0) THEN
       ENDIF
 
       valarray(i) = evalue
-      WRITE(1909,'(1x,I3,6ES16.7E2,1x,A3,5(ES15.6E3,1x))') m,xi,eta,zoff,a,sym,expo,evalue
+!      WRITE(1909,'(1x,I3,6ES16.7E2,1x,A3,5(ES15.6E3,1x))') m,xi,eta,zoff,a,sym,expo,evalue
    ENDDO readeval
 
 ! If there was a read error, let me know!
