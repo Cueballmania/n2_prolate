@@ -44,6 +44,9 @@ REAL(KIND=DBL) :: scaling_angle                     ! Scaling angle in degrees
 ! SVD
 REAL(KIND=DBL) :: SVD_tol                           ! Tolerance of the SVD
 
+! ARPACK
+COMPLEX(KIND=DBL) :: sigma
+
 END MODULE
 
 
@@ -125,6 +128,9 @@ openif: IF(ierror == 0) THEN
 
    ! Read in number of Gaussians basis being inserted and number of primative gaussians
    READ(9,*) numgauss, numprimg
+
+   ! shift for shift-invert diagonalization
+   READ(9,*) sigma
  
    CLOSE(9)
 

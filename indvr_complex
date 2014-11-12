@@ -1,9 +1,10 @@
-0,1	   	! J and m 
-7, 50   	! nelements, norder
-20    	 	! n_eta points
+0,0	   	! J and m 
+6, 20   	! nelements, norder
+15    	 	! n_eta points
 2.068d0     	! R value 
 20.0d0, 4   	! scaling angle for xi, starting complex element
 1	   	! tswitch: 1=DVR, 2=insertion
 2               ! vswitch: 1=DVR, 2=insertion
 1, 1.0D-5       ! SVDswitch (0=inverse, 1=orbits), SVD tolerance
 102, 102     	! if swtich=2, number of gauss basis, num prim gauss
+(0.0d0,0.0d0)  ! Shift for shift-invert

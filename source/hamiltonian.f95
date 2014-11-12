@@ -17,14 +17,16 @@ COMPLEX(KIND=DBL), INTENT(IN) :: ke_eta(1:n_eta,1:n_eta)            ! KE from et
 
 ! Output eigenvalue array
 COMPLEX(KIND=DBL), INTENT(OUT) :: eigbig(1:(n_xi-1)*n_eta) ! Array of eigenvalues from the Hamiltonian
+COMPLEX(KIND=DBL) :: eigvals(1:12)
 
 ! Functions
 INTEGER :: index_2d                                   ! Quick index function for the hybrid DVR functions
 COMPLEX(KIND=DBL) :: v_potential                      ! Array for DVR potentials
 
 ! Local Arrays
-COMPLEX(KIND=DBL), ALLOCATABLE :: ham2d(:,:)        ! 2-D hamiltonian
-COMPLEX(KIND=DBL), ALLOCATABLE :: insertpot(:,:)    ! Insertion potential
+COMPLEX(KIND=DBL), ALLOCATABLE :: ham2d(:,:)                   ! 2-D hamiltonian
+REAL(KIND=DBL), ALLOCATABLE :: rham2d(:,:), cham2d(:,:)        ! real and imaginary 2-D hamiltonian
+COMPLEX(KIND=DBL), ALLOCATABLE :: insertpot(:,:)               ! Insertion potential
 
 ! Local variables
 INTEGER :: i, j, k, n, m, ni, mi, nj
@@ -33,6 +35,8 @@ INTEGER :: nbas_xi
 ! Local normalization variables
 COMPLEX(KIND=DBL) :: smetric_mj, smetric_mi
 COMPLEX(KIND=DBL) :: smetric_ni, smetric_nj
+
+!!$INTEGER(KIND=DBL),ALLOCATABLE :: sparsem(:,:)
 
 ! Scale the number of xi components to remove the endpoint
 nbas_xi = n_xi-1
@@ -113,22 +117,66 @@ ENDIF
 WRITE(6,'(" finished building Hamiltonian")')
 
 
-!!$   OPEN(UNIT=10,FILE='hamil.out',STATUS='UNKNOWN',ACTION='WRITE')
+   OPEN(UNIT=10,FILE='rhamil.out',STATUS='UNKNOWN',ACTION='WRITE')
+   DO i=1,ntot
+       WRITE(10,'(1x,20000ES16.8)') (REAL(ham2d(i,j)),j=1, ntot)
+  ENDDO
+  CLOSE(10)
+!!$
+!!$
+!!$   OPEN(UNIT=11,FILE='ihamil.out',STATUS='UNKNOWN',ACTION='WRITE')
 !!$   DO i=1,ntot
-!!$      DO j=1, ntot
-!!$       WRITE(10,'(1x,2ES15.6)') ham2d(i,j)
-!!$      ENDDO
+!!$       WRITE(11,'(1x,20000ES16.8)') (AIMAG(ham2d(i,j)),j=1, ntot)
 !!$   ENDDO
-!!$   CLOSE(10)
-
+!!$   CLOSE(11)
 
 !   Diagonalize ham2d, finding all eigenvalues, no eigenvectors
 !   usiing LAPACK routine
 
+!!$ALLOCATE(sparsem(1:ntot,1:ntot))
+!!$DO i=1, ntot
+!!$   DO j=1, ntot
+!!$      IF(ABS(ham2d(i,j)) < 1E-6) THEN
+!!$         sparsem(i,j) = 0
+!!$      ELSE
+!!$         sparsem(i,j) = 1
+!!$      ENDIF
+!!$      ENDDO
+!!$ENDDO
+!!$
+!!$   OPEN(UNIT=10,FILE='lookhamil.out',STATUS='UNKNOWN',ACTION='WRITE')
+!!$   DO i=1,ntot
+!!$       WRITE(10,'(1x,200000I2)') (sparsem(i,j),j=1, ntot)
+!!$   ENDDO
+!!$   CLOSE(10)
+!!$
+!!$DEALLOCATE(sparsem)
+!!$STOP
 
 WRITE(6,'("begining diagonalization of hamiltonian ",i5," x",i5)') ntot,ntot
 
-CALL diagwrap(ntot, ham2d, eigbig)
+
+!!$ALLOCATE(rham2d(1:ntot,1:ntot), cham2d(1:ntot,1:ntot))
+!!$
+!!$rham2d = REAL(ham2d)
+!!$cham2d = AIMAG(ham2d)
+!!$
+!!$OPEN(UNIT=32, FILE='rham.bin', FORM='unformatted', STATUS='UNKNOWN', ACTION='WRITE')
+!!$WRITE(32) rham2d
+!!$CLOSE(32)
+!!$
+!!$OPEN(UNIT=33, FILE='cham.bin', FORM='unformatted', STATUS='UNKNOWN', ACTION='WRITE')
+!!$WRITE(33) cham2d
+!!$CLOSE(33)
+!!$
+!!$
+!!$DEALLOCATE(rham2d, cham2d)
+
+WRITE(*,*) "The shift for the diagonalization is ", sigma
+
+CALL arnoldi(ntot, ham2d, sigma, 12, eigvals)
+
+!CALL diagwrap(ntot, ham2d, eigbig)
 
 OPEN(UNIT=3737, FILE='spectrum.out', STATUS='UNKNOWN', ACTION='WRITE')
 DO i=1, ntot
