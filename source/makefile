@@ -7,7 +7,7 @@ LIB = -Wl,-framework -Wl,veclib ~/ARPACK/libarpack_MACOSX.a
 
 .SUFFIXES : .o .f90 .f95 .f08
 
-OBJS = mainprolate.o SVD_orthogonalization.o gaussquad.f08 diagwrap.o hamiltonian.o\
+OBJS = mainprolate.o SVD_orthogonalization.o gaussquad.f90 diagwrap.o hamiltonian.o\
          stos.o V_potential.o index_2d.o xi_dvr.o eta_dvr.o SVD_insert.o svd_lagpot.o\
          gaussmat.o xform.o readmesa.o SVD_eigen.o arnoldi.o
 
