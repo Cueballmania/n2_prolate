@@ -1,4 +1,4 @@
-SUBROUTINE arnoldi(nsize, mat, sigma, numeigen, eigenvs)
+SUBROUTINE arnoldi(nsize, mat, sigma, numeigen, eigenvs, eigenfs)
 !
 ! This subroutine uses the arnoldi iteration for double-complex valued matrix diagonalization
 ! This particular scheme uses the shift and invert method to find eigenvalues near a particular value, sigma
@@ -26,7 +26,8 @@ COMPLEX(KIND=DBL), INTENT(INOUT) :: mat(1:nsize,1:nsize)
 COMPLEX(KIND=DBL), INTENT(IN) :: sigma                       ! Shift value -- referenced if iparam(7) = 3
 
 ! Output eigenvalues
-COMPLEX(KIND=DBL) :: eigenvs(1:numeigen+1)
+COMPLEX(KIND=DBL), INTENT(OUT) :: eigenvs(1:numeigen+1)
+COMPLEX(KIND=DBL), INTENT(OUT) :: eigenfs(1:nsize,1:numeigen)
 
 ! ZNAUPD variables
 INTEGER :: ido                    ! Reverse communication flag.  Must be equal to zero before we start the Arnoldi procedure
@@ -57,7 +58,7 @@ INTEGER :: mode=3       ! What kind of eigenproblem? Mode=3 works well finding t
 
 ! ZNEUPD variables
 LOGICAL :: rvec                              ! Recover the eigenvectors
-CHARACTER(LEN=1) :: HOWMNY = 'P'             ! Schur vectors, Ritz vectors do not work
+CHARACTER(LEN=1) :: HOWMNY = 'A'             ! Schur vectors, Ritz vectors do not work
 INTEGER :: ldz                               ! Leading dimension of z, which is n
 INTEGER :: ierr                              ! Error flag
 LOGICAL, ALLOCATABLE :: selecte(:)           ! Work array to compute the Ritz vectors.  Size = ncv
@@ -66,7 +67,7 @@ COMPLEX(KIND=DBL), ALLOCATABLE :: z(:,:)     ! Array of eigenvectors.  Size = n 
 COMPLEX(KIND=DBL), ALLOCATABLE :: workev(:)  ! Work array of size 2*ncv
 
 ! LAPACK VARIABLES
-INTEGER :: i
+INTEGER :: i,j
 COMPLEX(KIND=DBL), ALLOCATABLE :: b(:)       ! zero array used for LU decomposition
 INTEGER, ALLOCATABLE :: IPIV(:)              ! integer array not referenced but could hold pivots
 INTEGER :: icant                             ! Error because it just can't
@@ -78,12 +79,11 @@ n=nsize
 nev = numeigen
 ncv = nev*2
 
-
 ! Initialize ARPACK variables
 ! ZNAUPD variables
 info = 0
 ido = 0
-which = 'SR'
+which = 'LM'
 ldv = n
 iparam(1) = ishift
 iparam(3) = maxitr
@@ -168,33 +168,34 @@ ELSE
 !!$c        | Print additional convergence information. |
 !!$c        %-------------------------------------------%
 !!$c
-   IF (info == 1) THEN
-      PRINT *, ' '
-      PRINT *, ' Maximum number of iterations reached.'
-      PRINT *, ' '
-   ELSEIF ( info == 3) THEN
-      PRINT *, ' ' 
-      PRINT *, ' No shifts could be applied during implicit',' Arnoldi update, try increasing NCV.'
-      PRINT *, ' '
-   ENDIF
-
-   PRINT *, ' '
-   PRINT *, '_NDRV2 '
-   PRINT *, '====== '
-   PRINT *, ' '
-   PRINT *, ' Size of the matrix is ', n
-   PRINT *, ' The number of Ritz values requested is ', nev
-   PRINT *, ' The number of Arnoldi vectors generated (NCV) is ', ncv
-   PRINT *, ' What portion of the spectrum: ', which
-   PRINT *, ' The number of Implicit Arnoldi update iterations taken is ', iparam(3)
-   PRINT *, ' The number of OP*x is ', iparam(9)
-   PRINT *, ' The convergence criterion is ', tol
-   PRINT *, ' '
+!!$   IF (info == 1) THEN
+!!$      PRINT *, ' '
+!!$      PRINT *, ' Maximum number of iterations reached.'
+!!$      PRINT *, ' '
+!!$   ELSEIF ( info == 3) THEN
+!!$      PRINT *, ' ' 
+!!$      PRINT *, ' No shifts could be applied during implicit',' Arnoldi update, try increasing NCV.'
+!!$      PRINT *, ' '
+!!$   ENDIF
+!!$
+!!$   PRINT *, ' '
+!!$   PRINT *, '_NDRV2 '
+!!$   PRINT *, '====== '
+!!$   PRINT *, ' '
+!!$   PRINT *, ' Size of the matrix is ', n
+!!$   PRINT *, ' The number of Ritz values requested is ', nev
+!!$   PRINT *, ' The number of Arnoldi vectors generated (NCV) is ', ncv
+!!$   PRINT *, ' What portion of the spectrum: ', which
+!!$   PRINT *, ' The number of Implicit Arnoldi update iterations taken is ', iparam(3)
+!!$   PRINT *, ' The number of OP*x is ', iparam(9)
+!!$   PRINT *, ' The convergence criterion is ', tol
+!!$   PRINT *, ' '
 ENDIF
 
+
 DO i=1, nev
+   eigenfs(:,i) = v(:,i)
    eigenvs(i) = d(i)
-   PRINT *, d(i)
 ENDDO
 
 ! DEALLOCATE

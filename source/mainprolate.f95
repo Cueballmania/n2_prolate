@@ -5,7 +5,7 @@ SAVE
 
 !Global constants
 INTEGER, PARAMETER :: DBL =  SELECTED_REAL_KIND(13,200)         ! Define Double Precision (precision,range)
-REAL(KIND=DBL), PARAMETER :: amasse=1.0d0                       ! Mass of particle
+REAL(KIND=DBL), PARAMETER :: amasse=1.0d0                       ! Mass of the particle
 REAL(KIND=DBL), PARAMETER :: pi=3.141592653589793238d0
 
 ! Input variables
@@ -30,6 +30,10 @@ INTEGER :: svdswitch                                ! SVDswitch
                                                     !    0: Insertion with pesudoinverse
                                                     !    1: SVD orthogonalization of orbitals
 
+INTEGER :: diagswitch                               ! Diagionalization switch
+                                                    !    0: Direct diagonalization using ZGEEV
+                                                    !    1: Arnoldi iterations with ARPACK
+
 ! Guassian
 INTEGER :: numgauss                                 ! Number of contracted Gaussian basis
 INTEGER :: numprimg                                 ! Number of primative Gaussians
@@ -45,7 +49,8 @@ REAL(KIND=DBL) :: scaling_angle                     ! Scaling angle in degrees
 REAL(KIND=DBL) :: SVD_tol                           ! Tolerance of the SVD
 
 ! ARPACK
-COMPLEX(KIND=DBL) :: sigma
+COMPLEX(KIND=DBL) :: sigma                          ! Shift and invert value
+INTEGER :: numeigen                                 ! Number of eigenvalues sought
 
 END MODULE
 
@@ -73,19 +78,13 @@ USE inputvars
 IMPLICIT NONE
 
 INTEGER :: ierror                                   ! Error flag
-REAL(KIND=DBL) :: xi_max_real                       ! Max value of xi (unscaled)
-COMPLEX(KIND=DBL) :: xi_min=(1.0d0,0.0d0)           ! Minimum of xi coordinates
-COMPLEX(KIND=DBL) :: xi_max                         ! Complex maximum value of xi 
-INTEGER :: i,j                                      ! Loop indices
+INTEGER :: i                                        ! Loop indices
 REAL(KIND=DBL) :: rval                              ! R, the distance between focii
 
 ! arrays for 1D operators
-INTEGER :: nbas_eta,nbas_xi                         ! Reduced size of the basis
 COMPLEX(KIND=DBL) :: cmplx_scaling                  ! Complex scaling factor
 COMPLEX(KIND=DBL), ALLOCATABLE :: ke_xi(:,:)        ! Kinetic energy matrix in xi
 COMPLEX(KIND=DBL), ALLOCATABLE :: ke_eta(:,:)       ! Kinetic energy matrix in eta
-COMPLEX(KIND=DBL), ALLOCATABLE :: der_xi(:,:)       ! Derivative matrix in xi
-COMPLEX(KIND=DBL), ALLOCATABLE :: der_eta(:,:)      ! Derivative matrix in eta
 COMPLEX(KIND=DBL), ALLOCATABLE :: xi_pts(:)         ! DVR pts in xi
 COMPLEX(KIND=DBL), ALLOCATABLE :: eta_pts(:)        ! DVR pts in eta
 COMPLEX(KIND=DBL), ALLOCATABLE :: xi_wts(:)         ! Weights in xi
@@ -129,8 +128,10 @@ openif: IF(ierror == 0) THEN
    ! Read in number of Gaussians basis being inserted and number of primative gaussians
    READ(9,*) numgauss, numprimg
 
+   READ(9,*) diagswitch
+
    ! shift for shift-invert diagonalization
-   READ(9,*) sigma
+   READ(9,*) sigma, numeigen
  
    CLOSE(9)
 
@@ -244,10 +245,23 @@ ALLOCATE(eigbig(1:(n_xi-1)*n_eta))
 
 CALL hamiltonian(xi_pts,ke_xi,eta_pts,ke_eta,eigbig,eta_wts,xi_wts)
 
-DO i=1, (n_xi-1)*n_eta
-!   IF(REAL(eigbig(i)) < 0.24d0 .AND. REAL(eigbig(i)) > 0.05d0) WRITE(9101,'(2ES17.6)') REAL(eigbig(i)),AIMAG(eigbig(i))
-   If(REAL(eigbig(i)) < -1.0D-10) WRITE(*,'(2ES17.6)') REAL(eigbig(i)), AIMAG(eigbig(i))
-ENDDO
+
+! PRINT out the eigenvalues that are negative or near the shift
+IF(diagswitch == 0) THEN
+
+  DO i=1, (n_xi-1)*n_eta
+     !   IF(REAL(eigbig(i)) < 0.24d0 .AND. REAL(eigbig(i)) > 0.05d0) WRITE(9101,'(2ES17.6)') REAL(eigbig(i)),AIMAG(eigbig(i))
+     If(REAL(eigbig(i)) < -1.0D-10) WRITE(*,'(2ES17.6)') REAL(eigbig(i)), AIMAG(eigbig(i))
+  ENDDO
+
+! Diagonalization by ARPACK
+ELSEIF(diagswitch == 1) THEN
+
+     DO i=1, numeigen
+      WRITE(*,'(2ES17.6)') REAL(eigbig(i)), AIMAG(eigbig(i))
+   ENDDO
+ENDIF
+
 
 DEALLOCATE(xi_pts, xi_wts, ke_xi)
 DEALLOCATE(eta_pts, eta_wts, ke_eta)
