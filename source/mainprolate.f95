@@ -80,6 +80,7 @@ IMPLICIT NONE
 INTEGER :: ierror                                   ! Error flag
 INTEGER :: i                                        ! Loop indices
 REAL(KIND=DBL) :: rval                              ! R, the distance between focii
+REAL(KIND=DBL) :: rshift, ishift                    ! Read in the shift information
 
 ! arrays for 1D operators
 COMPLEX(KIND=DBL) :: cmplx_scaling                  ! Complex scaling factor
@@ -131,7 +132,7 @@ openif: IF(ierror == 0) THEN
    READ(9,*) diagswitch
 
    ! shift for shift-invert diagonalization
-   READ(9,*) sigma, numeigen
+   READ(9,*) rshift, ishift, numeigen
  
    CLOSE(9)
 
@@ -141,8 +142,10 @@ ELSE openif
    STOP
 ENDIF openif
 
-! Print out input and preform some quick checks
+! Make the shift complex
+sigma = rshift + (0.0d0,1.0d0)*ishift
 
+! Print out input and preform some quick checks
 WRITE(6,'(//,10x,"Prolate Spheroidal Coordinate DVR Code")')
 
 ! Check for even or odd 'm' and print out result

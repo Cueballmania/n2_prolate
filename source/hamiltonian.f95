@@ -17,7 +17,10 @@ COMPLEX(KIND=DBL), INTENT(IN) :: ke_eta(1:n_eta,1:n_eta)            ! KE from et
 
 ! Output eigenvalue array
 COMPLEX(KIND=DBL), INTENT(OUT) :: eigbig(1:(n_xi-1)*n_eta) ! Array of eigenvalues from the Hamiltonian
-COMPLEX(KIND=DBL) :: eigvals(1:12)
+
+! ARPACK
+COMPLEX(KIND=DBL) :: eigfns(1:ntot,1:numeigen)
+COMPLEX(KIND=DBL) :: eigvals(1:numeigen)
 
 ! Functions
 INTEGER :: index_2d                                   ! Quick index function for the hybrid DVR functions
@@ -117,11 +120,11 @@ ENDIF
 WRITE(6,'(" finished building Hamiltonian")')
 
 
-   OPEN(UNIT=10,FILE='rhamil.out',STATUS='UNKNOWN',ACTION='WRITE')
-   DO i=1,ntot
-       WRITE(10,'(1x,20000ES16.8)') (REAL(ham2d(i,j)),j=1, ntot)
-  ENDDO
-  CLOSE(10)
+!   OPEN(UNIT=10,FILE='rhamil.out',STATUS='UNKNOWN',ACTION='WRITE')
+!   DO i=1,ntot
+!       WRITE(10,'(1x,20000ES16.8)') (REAL(ham2d(i,j)),j=1, ntot)
+!  ENDDO
+!  CLOSE(10)
 !!$
 !!$
 !!$   OPEN(UNIT=11,FILE='ihamil.out',STATUS='UNKNOWN',ACTION='WRITE')
@@ -172,17 +175,37 @@ WRITE(6,'("begining diagonalization of hamiltonian ",i5," x",i5)') ntot,ntot
 !!$
 !!$DEALLOCATE(rham2d, cham2d)
 
-WRITE(*,*) "The shift for the diagonalization is ", sigma
+! Diagonalization by ZGEEV
+IF(diagswitch == 0) THEN
 
-CALL arnoldi(ntot, ham2d, sigma, 12, eigvals)
+   WRITE(6,'("Diagonalization by ZGEEV")')
+   CALL diagwrap(ntot, ham2d, eigbig)
 
-!CALL diagwrap(ntot, ham2d, eigbig)
+   OPEN(UNIT=3737, FILE='spectrum.out', STATUS='UNKNOWN', ACTION='WRITE')
+   DO i=1, ntot
+      WRITE(3737,'(1x,2ES19.9E4)') eigbig(i)
+   ENDDO
+   CLOSE(3737)
 
-OPEN(UNIT=3737, FILE='spectrum.out', STATUS='UNKNOWN', ACTION='WRITE')
-DO i=1, ntot
-   WRITE(3737,'(1x,2ES19.9E4)') eigbig(i)
-ENDDO
-CLOSE(3737)
+! Diagonalization by ARPACK
+ELSEIF(diagswitch == 1) THEN
+
+   WRITE(6,'("Diagonalization by ARPACK")')
+   WRITE(6,'("Seeking ", i4, " eigenvalues near the complex value sigma = ", ES15.5, " + i ", ES15.5)') numeigen, &
+        & REAL(sigma), AIMAG(sigma)
+
+   CALL arnoldi(ntot, ham2d, sigma, numeigen, eigvals, eigfns)
+
+
+   OPEN(UNIT=3737, FILE='spectrum.out', STATUS='UNKNOWN', ACTION='WRITE')
+   DO i=1, numeigen
+      eigbig(i) = eigvals(i)
+      WRITE(3737,'(1x,2ES19.9E4)') eigvals(i)
+   ENDDO
+   CLOSE(3737)
+
+ENDIF
+
 
 DEALLOCATE(ham2d)
 
