@@ -15,6 +15,7 @@ IMPLICIT NONE
 INTEGER, PARAMETER :: DBL =  SELECTED_REAL_KIND(13,200)         ! Define Double Precision (precision,range)
 REAL(KIND=DBL), PARAMETER :: pi = 3.14159265358979
 REAL(KIND=DBL),PARAMETER :: sqtpi = 1.77245385090552
+REAL(KIND=DBL), PARAMETER :: sqrtpi2 = 1.2533141373155
 COMPLEX(KIND=DBL), PARAMETER :: ci = (0.0d0,1.0d0)
 
 ! Input variables
@@ -38,10 +39,12 @@ COMPLEX(KIND=DBL) :: z                        ! Variable for z
 INTEGER :: ierror, iread                      ! Read error variables
 REAL(KIND=DBL) :: zoff                        ! The z-offset of the input Gaussian
 REAL(KIND=DBL) :: expo                        ! Exponent of the Gaussian
-CHARACTER(LEN=2) :: sym                       ! Read in the 2 character symmetry
+CHARACTER(LEN=3) :: sym                       ! Read in the 2 character symmetry
 
 ! Local variables
 INTEGER :: i                                  ! Loop variable
+COMPLEX(KIND=DBL) :: gvalue                   ! Value of the Guassian part
+REAL(KIND=DBL) :: norm                        ! Normalization
 COMPLEX(KIND=DBL) :: evalue                   ! Temp value of the integral under quadrature
 
 ! Calculate the Cartesian variables
@@ -67,55 +70,157 @@ fileopen: IF (ierror == 0) THEN
       ENDIF
       
       ! Evaluate the Gaussian expoential
-      evalue = EXP(-expo*(rsq_2d+(z-zoff)*(z-zoff)))
+      gvalue = EXP(-expo*(rsq_2d+(z-zoff)*(z-zoff)))
 
-      ! Cases for the angular parts
-      IF(sym .EQ. 'ss' .AND. m .EQ. 0) THEN
-         evalue = (2.0d0*expo/pi)**(0.75)*evalue*SQRT(2.0d0*pi)
+      SELECT CASE(ABS(m))
+         CASE(0)
+            IF(sym .EQ. 'ss') THEN
+               norm = (2.0d0*expo/pi)**(0.75)
+               evalue = norm*gvalue*SQRT(2.0d0*pi)
 
-      ELSEIF(sym .EQ. 'px' .AND. m .EQ. 1) THEN
-         evalue = xy*evalue*SQRT(0.5d0*pi)*2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)
-      ELSEIF(sym .EQ. 'px' .AND. m .EQ. -1) THEN
-         evalue = xy*evalue*SQRT(0.5d0*pi)*2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)      
-      ELSEIF(sym .EQ. 'py' .AND. m .EQ. 1) THEN
-         evalue = xy*evalue*ci*SQRT(0.5d0*pi)*2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)  
-      ELSEIF(sym .EQ. 'py' .AND. m .EQ. -1) THEN
-         evalue = -xy*evalue*ci*SQRT(0.5d0*pi)*2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)  
-      ELSEIF(sym .EQ. 'pz' .AND. m .EQ. 0) THEN
-         evalue = (z-zoff)*evalue*SQRT(2.0d0*pi)*2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)
+            ELSEIF(sym .EQ. 'pz') THEN
+               norm = 2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)
+               evalue = norm*(z-zoff)*gvalue*SQRT(2.0d0*pi)
 
-      ELSEIF(sym .EQ. 'xx' .AND. m .EQ. 0) THEN
-         evalue = rsq_2d*evalue*SQRT(0.5d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'xx' .AND. m .EQ. 2) THEN
-         evalue = rsq_2d*evalue*SQRT(0.5d0*pi)*0.5d0*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'xx' .AND. m .EQ. -2) THEN
-         evalue = rsq_2d*evalue*SQRT(0.5d0*pi)*0.5d0*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+            ELSEIF(sym .EQ. 'xx') THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*rsq_2d*gvalue*sqrtpi2
+            ELSEIF(sym .EQ. 'yy') THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*rsq_2d*gvalue*sqrtpi2
+            ELSEIF(sym .EQ. 'zz') THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*(z-zoff)*(z-zoff)*gvalue*SQRT(2.0d0*pi)
 
-      ELSEIF(sym .EQ. 'yy' .AND. m .EQ. 0) THEN
-         evalue = rsq_2d*evalue*SQRT(0.5d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'yy' .AND. m .EQ. 2) THEN
-         evalue = -rsq_2d*evalue*SQRT(0.5d0*pi)*0.5d0*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'yy' .AND. m .EQ. -2) THEN
-         evalue = -rsq_2d*evalue*SQRT(0.5d0*pi)*0.5d0*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+            ELSEIF(sym .EQ. 'zzz') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*(z-zoff)*(z-zoff)*(z-zoff)*gvalue*SQRT(2.0d0*pi)
+            ELSEIF(sym .EQ. 'xxz') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*(z-zoff)*gvalue*sqrtpi2
+            ELSEIF(sym .EQ. 'yyz') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*(z-zoff)*gvalue*sqrtpi2
 
-      ELSEIF(sym .EQ. 'zz' .AND. m .EQ. 0) THEN
-         evalue = (z-zoff)*(z-zoff)*evalue*SQRT(2.0d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+            ELSE
+                evalue = (0.0d0,0.0d0)
+            ENDIF
 
-      ELSEIF(sym .EQ. 'xy' .AND. m .EQ. 2) THEN
-         evalue = rsq_2d*evalue*ci*SQRT(0.5d0*pi)*0.5d0*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'xy' .AND. m .EQ. -2) THEN
-         evalue = -rsq_2d*evalue*ci*SQRT(0.5d0*pi)*0.5d0*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'xz' .AND. m .EQ. 1) THEN
-         evalue = xy*(z-zoff)*evalue*SQRT(0.5d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'xz' .AND. m .EQ. -1) THEN
-         evalue = xy*(z-zoff)*evalue*SQRT(0.5d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'yz' .AND. m .EQ. 1) THEN
-         evalue = xy*(z-zoff)*evalue*ci*SQRT(0.5d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSEIF(sym .EQ. 'yz' .AND. m .EQ. -1) THEN
-         evalue = -xy*(z-zoff)*evalue*ci*SQRT(0.5d0*pi)*4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
-      ELSE
-         evalue = (0.0d0,0.0d0)
-      ENDIF
+
+         CASE(1)
+            IF(sym .EQ. 'px') THEN
+               norm = 2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)
+               evalue = norm*xy*gvalue*sqrtpi2
+            ELSEIF(sym .EQ. 'py' .AND. m .EQ. 1) THEN
+               norm = 2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)
+               evalue = norm*xy*gvalue*ci*sqrtpi2
+            ELSEIF(sym .EQ. 'py' .AND. m .EQ. -1) THEN
+               norm = 2.0d0*(2.0d0/pi)**(0.75)*expo**(1.25)
+               evalue = -norm*xy*gvalue*ci*sqrtpi2
+
+            ELSEIF(sym .EQ. 'xz') THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*xy*(z-zoff)*gvalue*sqrtpi2
+            ELSEIF(sym .EQ. 'yz' .AND. m .EQ. 1) THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*xy*(z-zoff)*gvalue*ci*sqrtpi2
+            ELSEIF(sym .EQ. 'yz' .AND. m .EQ. -1) THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = -norm*xy*(z-zoff)*gvalue*ci*sqrtpi2
+
+            ELSEIF(sym .EQ. 'xxx') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*sqrtpi2*(0.75)
+            ELSEIF(sym .EQ. 'yyy' .AND. m .EQ. 1) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.75)
+            ELSEIF(sym .EQ. 'yyy' .AND. m .EQ. -1) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.75)
+            ELSEIF(sym .EQ. 'xxy' .AND. m .EQ. 1) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'xxy' .AND. m .EQ. -1) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'xyy') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'xzz') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*(z-zoff)*(z-zoff)*xy*gvalue*sqrtpi2
+            ELSEIF(sym .EQ. 'yzz' .AND. m .EQ. 1) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*(z-zoff)*(z-zoff)*xy*gvalue*ci*sqrtpi2
+            ELSEIF(sym .EQ. 'yzz' .AND. m .EQ. -1) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*(z-zoff)*(z-zoff)*xy*gvalue*ci*sqrtpi2
+
+            ELSE
+                evalue = (0.0d0,0.0d0)
+            ENDIF
+
+
+         CASE(2)
+            IF(sym .EQ. 'xx') THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*rsq_2d*gvalue*sqrtpi2*(0.5)
+            ELSEIF(sym .EQ. 'yy') THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = -norm*rsq_2d*gvalue*sqrtpi2*(0.5)
+            ELSEIF(sym .EQ. 'xy' .AND. m .EQ. 2) THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = norm*rsq_2d*gvalue*ci*sqrtpi2*(0.5)
+            ELSEIF(sym .EQ. 'xy' .AND. m .EQ. -2) THEN
+               norm = 4.0d0*(2.0d0/pi)**(0.75)*expo**(1.75)
+               evalue = -norm*rsq_2d*gvalue*ci*sqrtpi2*(0.5)
+
+            ELSEIF(sym .EQ. 'xxz') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*(z-zoff)*gvalue*sqrtpi2*(0.5)
+            ELSEIF(sym .EQ. 'yyz') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*(z-zoff)*gvalue*sqrtpi2*(0.5)
+            ELSEIF(sym .EQ. 'xyz' .AND. m .EQ. 2) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*(z-zoff)*gvalue*ci*sqrtpi2*(0.5)            
+            ELSEIF(sym .EQ. 'xyz' .AND. m .EQ. -2) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*(z-zoff)*gvalue*ci*sqrtpi2*(0.5)           
+
+            ELSE
+                evalue = (0.0d0,0.0d0)
+            ENDIF
+
+
+         CASE(3)
+            IF(sym .EQ. 'xxx') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'yyy' .AND. m .EQ. 3) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'yyy' .AND. m .EQ. -3) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'xxy' .AND. m .EQ. 3) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'xxy' .AND. m .EQ. -3) THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*xy*gvalue*ci*sqrtpi2*(0.25)
+            ELSEIF(sym .EQ. 'xyy') THEN
+               norm = (4.0d0)**(1.5)*(2.0d0/pi)**(0.75)*expo**(2.25)
+               evalue = -norm*rsq_2d*xy*gvalue*sqrtpi2*(0.25)
+          
+            ELSE
+                evalue = (0.0d0,0.0d0)
+            ENDIF
+
+
+         CASE DEFAULT
+             evalue = (0.0d0,0.0d0)
+      END SELECT
 
       valarray(i) = evalue
 !      WRITE(1909,'(1x,I3,6ES16.7E2,1x,A3,5(ES15.6E3,1x))') m,xi,eta,zoff,a,sym,expo,evalue
