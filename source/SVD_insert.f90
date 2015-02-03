@@ -63,14 +63,28 @@ mfac=-1
 CALL gaussmat(xi_pts,xi_wts,nbas_xi,eta_pts,eta_wts,nbas_eta,conjgaussdvr,mfac)
 WRITE(*,*) "Gaussmat conjugate done"
 
-! Call for contraction matrix
-!OPEN(UNIT=95, FILE='xform.dat', STATUS='OLD', ACTION='READ')
-!DO i=1, numgauss
-!   READ(95, *) (xformmat(i,j),j=1,numprimg)
-!ENDDO
-!CLOSE(95)
+! Check to see if there is a contraction matrix, if so, read it in
+!   else, set to the identity matrix
+IF(numgauss == numprimg) THEN
+   xformmat = 0.0d0
+   DO i=1,numgauss
+      xformmat(i,i) = 1.0d0
+   ENDDO
 
-!WRITE(*,*) "xform done"
+ELSE
+   OPEN(UNIT=95, FILE='xform.dat', STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+   IF(ierror /= 0) THEN
+      WRITE(*,*) "Error reading xform.dat -- did you forget it? ierror = ", ierror
+      STOP
+   ELSE
+      DO i=1, numgauss
+         READ(95, *) (xformmat(i,j),j=1,numprimg)
+      ENDDO
+      CLOSE(95)
+   ENDIF
+ENDIF
+
+WRITE(*,*) "xform done"
 
 ! CALL SVD routine to calculate the orthonormal orbitals or the pseudoinverse
 CALL SVD_Ortho(numgauss, overlaps, inverse_overlaps, orthorbitals, norbits, SVD_tol)
@@ -87,7 +101,8 @@ insertinverse: IF(svdswitch .EQ. 1) THEN
    ! Evaluate the insertion multiplication
    smalltemp = MATMUL(TRANSPOSE(orthorbitals),MATMUL(gausspotin,orthorbitals))
    smalltemp = MATMUL(orthorbitals,MATMUL(smalltemp,TRANSPOSE(orthorbitals)))
-   insertpot = MATMUL(conjgaussdvr,MATMUL(smalltemp,TRANSPOSE(gaussdvr)))
+   largetemp = MATMUL(TRANSPOSE(xformmat),MATMUL(smalltemp,xformmat))
+   insertpot = MATMUL(conjgaussdvr,MATMUL(largetemp,TRANSPOSE(gaussdvr)))
 
 !   unity = MATMUL(xformmat,MATMUL(TRANSPOSE(conjgaussdvr),MATMUL(gaussdvr,TRANSPOSE(xformmat))))
 
@@ -137,7 +152,8 @@ ELSE IF(svdswitch .EQ. 0) THEN insertinverse
 
    !Create the inserted potential evaluated on the DVR
    smalltemp = MATMUL(inverse_overlaps,MATMUL(gausspotin,inverse_overlaps))
-   insertpot = MATMUL(conjgaussdvr,MATMUL(smalltemp,TRANSPOSE(gaussdvr)))
+   largetemp = MATMUL(TRANSPOSE(xformmat),MATMUL(smalltemp,xformmat))
+   insertpot = MATMUL(conjgaussdvr,MATMUL(largetemp,TRANSPOSE(gaussdvr)))
 
 
 ELSE insertinverse
