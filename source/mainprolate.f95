@@ -34,6 +34,10 @@ INTEGER :: diagswitch                               ! Diagionalization switch
                                                     !    0: Direct diagonalization using ZGEEV
                                                     !    1: Arnoldi iterations with ARPACK
 
+INTEGER :: qchemswitch                              ! Switch defining the input quantum chemistry program
+                                                    !    0: Mesa -- Poor nomalization
+                                                    !    1: QChem -- Correct normalization
+
 ! Guassian
 INTEGER :: numgauss                                 ! Number of contracted Gaussian basis
 INTEGER :: numprimg                                 ! Number of primative Gaussians
@@ -129,7 +133,7 @@ openif: IF(ierror == 0) THEN
    ! Read in number of Gaussians basis being inserted and number of primative gaussians
    READ(9,*) numgauss, numprimg
 
-   READ(9,*) diagswitch
+   READ(9,*) diagswitch, qchemswitch   
 
    ! shift for shift-invert diagonalization
    READ(9,*) rshift, ishift, numeigen

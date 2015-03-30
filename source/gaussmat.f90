@@ -66,7 +66,7 @@ DO i=1,nbas_xi
       local_eta = eta_pts(j)
       weights = SQRT(xi_wts(i)*eta_wts(j))
       var_jacob = SQRT(R_over_two**3*(local_xi**2-local_eta**2))
-      CALL stos(local_xi, local_eta, R_over_two, numprimg, gaussarray, meff)
+      CALL stos(local_xi, local_eta, R_over_two, numprimg, gaussarray, meff, qchemswitch)
       DO k=1, numprimg
          gaussdvrmat(ni,k) = weights*var_jacob*gaussarray(k)
       ENDDO
