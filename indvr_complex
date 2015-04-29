@@ -1,4 +1,4 @@
-0,1	   	! J and m 
+0,0	   	! J and m 
 6, 30   	! nelements, norder
 35    	 	! n_eta points
 2.068d0     	! R value 
@@ -7,5 +7,5 @@
 2               ! vswitch: 1=DVR, 2=insertion
 1, 1.0D-5       ! SVDswitch (0=inverse, 1=orbits), SVD tolerance
 102, 102     	! if swtich=2, number of gauss basis, num prim gauss
-1               ! diagswitch:  1=zgeev, 2=ARPACK
-0.1d0, 0.0d0, 5 ! Shift for shift-invert(real, complex), number of eigenvalues sought
+1, 0            ! diagswitch:  0=zgeev, 1=ARPACK, Qchemswitch: 0=mesa,1=qchem
+-12.d0, 0.0d0, 5 ! Shift for shift-invert(real, complex), number of eigenvalues sought
