@@ -1,12 +1,12 @@
 !This subroutine constructs the matrix of the Laguerre potential energy
 !from the old code's lower diagonal matrix
-SUBROUTINE svd_lagpot(numgauss,overlaps,matrixin,tswitch)
+SUBROUTINE svd_lagpot(numgauss,overlaps,matrixin,tswitch,vswitch)
 IMPLICIT NONE
 
 INTEGER, PARAMETER :: DBL =  SELECTED_REAL_KIND(13,200)         ! Define Double Precision (precision,range)
 INTEGER, INTENT(IN) :: tswitch
 
-INTEGER :: i, j, numgauss
+INTEGER ::numgauss, vswitch
 REAL(KIND=DBL) :: matrixin(1:numgauss, 1:numgauss)
 REAL(KIND=DBL) :: direct(1:numgauss, 1:numgauss)
 REAL(KIND=DBL) :: exchange(1:numgauss, 1:numgauss)
@@ -30,7 +30,11 @@ CALL readmesa('directxx.dat',numgauss,direct)
 
 CALL readmesa('exchange.dat',numgauss,exchange)
 
-CALL readmesa('vnucxxxx.dat',numgauss,vnuc)
+IF(vswitch == 2) THEN
+   CALL readmesa('vnucxxxx.dat',numgauss,vnuc)
+ELSE IF(vswitch == 3) THEN
+   CALL readmesa('vnucbeck.dat',numgauss,vnuc)
+ENDIF
 
 matrixin = kinetic + vnuc + direct - 0.5d0*exchange
 

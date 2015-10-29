@@ -28,7 +28,7 @@ COMPLEX(KIND=DBL) :: gaussdvr(1:ntot,1:numprimg)
 COMPLEX(KIND=DBL) :: conjgaussdvr(1:ntot,1:numprimg)
 
 ! DVR - contracted *****DEBUG ONLY*****
-COMPLEX(KIND=DBL) :: basisdvr(1:ntot,1:numgauss)
+!COMPLEX(KIND=DBL) :: basisdvr(1:ntot,1:numgauss)
 
 ! Transformation matrix to make contractions
 REAL(KIND=DBL) :: xformmat(1:numgauss,1:numprimg)
@@ -36,23 +36,18 @@ REAL(KIND=DBL) :: xformmat(1:numgauss,1:numprimg)
 ! SVD variables
 INTEGER :: norbits                             ! number of orthogonal orbitals
 REAL(KIND=DBL) :: orthorbitals(1:numgauss,1:numgauss)
-COMPLEX(KIND=DBL) :: unity(1:numgauss,1:numgauss)
 REAL(KIND=DBL) :: inverse_overlaps(1:numgauss,1:numgauss)
-REAL(KIND=DBL) :: diffoverlaps(1:numgauss,1:numgauss)
-REAL(KIND=DBL) :: lgeigen
 
 ! Temp matrix
-REAL(KIND=DBL) :: fnorm = 0.0d0
 COMPLEX(KIND=DBL) :: smalltemp(1:numgauss,1:numgauss)
 COMPLEX(KIND=DBL) :: largetemp(1:numprimg,1:numprimg)
-COMPLEX(KIND=DBL) :: wrbig(1:ntot)
 !!$!ZGEEV
 !!$INTEGER :: ldvr=1, ldvl=1, lwork, info
 !!$REAL(KIND=DBL) :: rwork(1:2*ntot)
 !!$COMPLEX(KIND=DBL) :: wrbig(1:ntot), workspcbig(1:10*ntot), VL(1:ntot,1:ntot), VR(1:ntot,1:ntot)
 
 ! Read in gaussian exponents, overlaps and the potential energy in Gaussians
-CALL svd_lagpot(numgauss,overlaps,gausspotin,tswitch)
+CALL svd_lagpot(numgauss,overlaps,gausspotin,tswitch,vswitch)
 
 ! Create the Gaussian matrix evaluated in dvrs with the appropriate weights and factors
 CALL gaussmat(xi_pts,xi_wts,nbas_xi,eta_pts,eta_wts,nbas_eta,gaussdvr,mfac)

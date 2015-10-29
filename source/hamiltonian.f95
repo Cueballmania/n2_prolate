@@ -24,19 +24,20 @@ COMPLEX(KIND=DBL) :: eigvals(1:numeigen)
 
 ! Functions
 INTEGER :: index_2d                                   ! Quick index function for the hybrid DVR functions
-COMPLEX(KIND=DBL) :: v_potential                      ! Array for DVR potentials
+COMPLEX(KIND=DBL) :: vvalue                      ! Array for DVR potentials
 
 ! Local Arrays
 COMPLEX(KIND=DBL), ALLOCATABLE :: ham2d(:,:)                   ! 2-D hamiltonian
-REAL(KIND=DBL), ALLOCATABLE :: rham2d(:,:), cham2d(:,:)        ! real and imaginary 2-D hamiltonian
 COMPLEX(KIND=DBL), ALLOCATABLE :: insertpot(:,:)               ! Insertion potential
 
 ! Local variables
-INTEGER :: i, j, k, n, m, ni, mi, nj
+INTEGER :: i, j, n, m, ni, mi, nj
 INTEGER :: nbas_xi
+REAL(KIND=DBL) :: pt1, pta, ptb
+REAL(KIND=DBL) :: beckeresult, beckepart
 
 ! Local normalization variables
-COMPLEX(KIND=DBL) :: smetric_mj, smetric_mi
+COMPLEX(KIND=DBL) :: smetric_mi
 COMPLEX(KIND=DBL) :: smetric_ni, smetric_nj
 
 !!$INTEGER(KIND=DBL),ALLOCATABLE :: sparsem(:,:)
@@ -84,18 +85,28 @@ DO n=1,nbas_xi
    ENDDO
 ENDDO
 
-
 ! Check the switches to see what the Hamiltonian is made up from
+! Running whatever potential is in V_Potential -- usually bare nuclear attraction
 IF(vswitch == 1) THEN
-! DVR potential calculation
-DO n=1,nbas_xi
-   DO i=1,n_eta
-      ni = index_2d(n,i,nbas_xi)
-      ham2d(ni,ni) = ham2d(ni,ni) + V_potential(xi_pts(n),eta_pts(i),R_over_two)
-   ENDDO
-ENDDO
+   ! DVR potential calculation
 
-ELSE
+   WRITE(*,*) "Using the Bare Nuclear Potential"
+   
+   DO n=1,nbas_xi
+      DO i=1,n_eta
+         ni = index_2d(n,i,nbas_xi)
+         CALL V_potential(xi_pts(n),eta_pts(i),R_over_two, vvalue)
+         ham2d(ni,ni) = ham2d(ni,ni) + vvalue
+      ENDDO
+   ENDDO
+
+! Insertion of the whole separable potential
+! vnuc + 2J - K
+ELSE IF(vswitch == 2) THEN
+
+   WRITE(*,*) "Using the Full Separable Potential"
+   WRITE(*,*) "V_sep = V_nuc + 2J - K"
+   
    ALLOCATE(insertpot(1:ntot,1:ntot))
    CALL svd_insert(xi_pts,xi_wts,nbas_xi,eta_pts,eta_wts,n_eta,insertpot)
 
@@ -115,6 +126,107 @@ ELSE
    ENDIF
 
    DEALLOCATE(insertpot)
+
+! Use of the partitioning function
+! Starting in element 1 or element 2 from FEMpartswtich 
+ELSE IF(vswitch == 3) THEN
+
+   IF(FEMpartswtich == 1) THEN
+      WRITE(*,*) "Starting the partition in the first element of xi from 1.0 to ", xi_pts(norder)
+      pta = REAL(xi_pts(1))
+      ptb = REAL(xi_pts(norder))
+
+
+      OPEN(UNIT=10,FILE='bpart.out',STATUS='UNKNOWN',ACTION='WRITE')
+      
+      DO n=1, norder
+         pt1 = REAL(xi_pts(n))
+         beckeresult = 1.0-beckepart(pt1,pta,ptb)
+         DO i=1,n_eta
+            ni = index_2d(n,i,nbas_xi)
+            CALL V_potential(xi_pts(n),eta_pts(i),R_over_two, vvalue)
+            ham2d(ni,ni) = ham2d(ni,ni) +beckeresult*vvalue
+         ENDDO
+         WRITE(10,*) pt1, beckeresult
+      ENDDO
+
+      CLOSE(10)
+      
+      ALLOCATE(insertpot(1:ntot,1:ntot))
+      CALL svd_insert(xi_pts,xi_wts,nbas_xi,eta_pts,eta_wts,n_eta,insertpot)
+
+      IF(tswitch == 1) THEN
+         DO n=1, nbas_xi*n_eta
+            DO i=1, nbas_xi*n_eta
+               ham2d(n,i) = ham2d(n,i) + insertpot(n,i)
+            ENDDO
+         ENDDO
+
+      ELSE
+         DO n=1, nbas_xi*n_eta
+            DO i=1, nbas_xi*n_eta
+               ham2d(n,i) = insertpot(n,i)
+            ENDDO
+         ENDDO
+      ENDIF
+
+      DEALLOCATE(insertpot)
+
+
+      
+   ELSE IF(FEMpartswtich  == 2) THEN
+      WRITE(*,*) "Starting the partition in the second element of xi from ", xi_pts(norder), " to ", xi_pts(2*norder-1)
+      pta = REAL(xi_pts(norder+1))
+      ptb = REAL(xi_pts(2*norder-1))
+
+      DO n=1,norder
+         DO i=1,n_eta
+            ni = index_2d(n,i,nbas_xi)
+            CALL V_potential(xi_pts(n),eta_pts(i),R_over_two, vvalue)
+            ham2d(ni,ni) = ham2d(ni,ni) + vvalue
+         ENDDO
+      ENDDO
+
+      OPEN(UNIT=10,FILE='bpart.out',STATUS='UNKNOWN',ACTION='WRITE')
+      
+      DO n=norder+1, 2*norder-1
+         pt1 = REAL(xi_pts(n))
+         beckeresult = 1.0-beckepart(pt1,pta,ptb)
+         DO i=1,n_eta
+            ni = index_2d(n,i,nbas_xi)
+            CALL V_potential(xi_pts(n),eta_pts(i),R_over_two, vvalue)
+            ham2d(ni,ni) = ham2d(ni,ni) +beckeresult*vvalue
+         ENDDO
+         WRITE(10,*) pt1, beckeresult
+      ENDDO
+
+      CLOSE(10)
+      
+      ALLOCATE(insertpot(1:ntot,1:ntot))
+      CALL svd_insert(xi_pts,xi_wts,nbas_xi,eta_pts,eta_wts,n_eta,insertpot)
+
+      IF(tswitch == 1) THEN
+         DO n=1, nbas_xi*n_eta
+            DO i=1, nbas_xi*n_eta
+               ham2d(n,i) = ham2d(n,i) + insertpot(n,i)
+            ENDDO
+         ENDDO
+
+      ELSE
+         DO n=1, nbas_xi*n_eta
+            DO i=1, nbas_xi*n_eta
+               ham2d(n,i) = insertpot(n,i)
+            ENDDO
+         ENDDO
+      ENDIF
+
+      DEALLOCATE(insertpot)
+
+   ELSE
+      WRITE(*,*) "FEMpartswtich is invalid.  Exiting"
+      STOP
+
+   ENDIF
 ENDIF
 
 WRITE(6,'(" finished building Hamiltonian")')

@@ -2,7 +2,7 @@ SUBROUTINE readmesa(filename, ndim, matrix)
 IMPLICIT NONE
 !
 CHARACTER(LEN=12) :: filename
-INTEGER :: ndim, hold
+INTEGER :: ndim
 INTEGER :: i, j 
 REAL(KIND=8) :: matrix(1:ndim,1:ndim)
 !

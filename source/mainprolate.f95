@@ -25,10 +25,15 @@ INTEGER :: tswitch                                  ! Type of calculation
 
 INTEGER :: vswitch                                  !    vswitch = 1: DVR calc
                                                     !    vswitch = 2: Insertion
+                                                    !    vswitch = 3: Partitioning
 
 INTEGER :: svdswitch                                ! SVDswitch
                                                     !    0: Insertion with pesudoinverse
                                                     !    1: SVD orthogonalization of orbitals
+
+INTEGER :: FEMpartswtich                            ! Switch for which element to start the partitioning
+                                                    !   Only takes between 1 and 2.
+
 
 INTEGER :: diagswitch                               ! Diagionalization switch
                                                     !    0: Direct diagonalization using ZGEEV
@@ -123,7 +128,7 @@ openif: IF(ierror == 0) THEN
    READ(9,*) tswitch
 
    ! input information for the potential energy evaluation (DVR or insertion)
-   READ(9,*) vswitch
+   READ(9,*) vswitch, FEMpartswtich
 
    ! input information for how the insertion is evaluated and the SVD_tolerance
    !   svdswitch = 0 : Use pseudoinverse of the overlaps
@@ -186,12 +191,14 @@ ELSE IF(tswitch == 1 .AND. vswitch == 1) THEN
    WRITE(6,'(//," DVR calculation for both the T-matrix and the V-matrix.")')
 ELSE IF(tswitch == 1 .AND. vswitch == 2) THEN
    WRITE(6,'(//," DVR calculation for the T-matrix and insertion for the V-matrix.")')
+ELSE IF(tswitch == 1 .AND. vswitch == 3) THEN
+   WRITE(6,'(//," DVR calculation for the T-matrix and partitioned insertion for the V-matrix.")')
 ELSE IF(tswitch == 2 .AND. vswitch == 2) THEN
    WRITE(6,'(//," Insertion calcuation for both the T-matrix and the V-matrix.")')
 ENDIF
 
 ! Write out the SVD information if there is insertion
-IF(vswitch == 2) THEN
+IF(vswitch == 2 .OR. vswitch == 3) THEN
    IF (svdswitch == 0) THEN
       WRITE(6, 400) numgauss, numprimg, svd_tol
 400   FORMAT (1x, 'Insertion: the pseudoinverse of the overlap matrix for ', I3, ' contracted Gaussians and ',&

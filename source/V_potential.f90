@@ -1,4 +1,4 @@
-COMPLEX FUNCTION V_potential(xi,eta,R_over_two)
+SUBROUTINE V_potential(xi,eta,R_over_two,vvalue)
 !
 !   potential for one electron problem specified completely here
 !   needs to be cylindrically symmetric (otherwise phi dependence would couple 
@@ -6,8 +6,12 @@ COMPLEX FUNCTION V_potential(xi,eta,R_over_two)
 !
 IMPLICIT NONE
 INTEGER, PARAMETER :: DBL =  SELECTED_REAL_KIND(13,200)         ! Define Double Precision (precision,range)
-COMPLEX(KIND=DBL) :: xi, eta, r, z,xsquared_plus_ysquared
-REAL(KIND=DBL) :: R_over_two, lambda, gamma, A
+COMPLEX(KIND=DBL), INTENT(IN) :: xi, eta
+REAL(KIND=DBL), INTENT(IN) :: R_over_two
+COMPLEX(KIND=DBL), INTENT(OUT) ::  vvalue
+
+COMPLEX(KIND=DBL) :: r, z,xsquared_plus_ysquared
+
 !  coordinates not dependent on phi
 r = R_over_two*SQRT((xi**2-1.d0)*(1.d0-eta**2)+(xi**2)*(eta**2))
 xsquared_plus_ysquared=(R_over_two**2)*(xi**2-1.d0)*(1.d0-eta**2)
@@ -18,6 +22,7 @@ z = R_over_two*xi*eta
 ! potential from 1978 paper on complex basis function method
 !  parameters of gaussian model potential from 1978 paper
 !  note addition of the term proportional to sigma allows it to have bound states
+!  REAL(KIND=DBL) :: lambda, gamma, A
 !       lambda = 0.35d0
 !       sigma = 1.25d0
 !       gamma = 0.13d0
@@ -36,7 +41,7 @@ z = R_over_two*xi*eta
 !        V_potential =.5d0*r**2
 !
 ! Potential for n2
-         V_potential = -2.0d0*7.0d0*xi/(xi**2-eta**2)/R_over_two 
+         vvalue = -2.0d0*7.0d0*xi/(xi**2-eta**2)/R_over_two 
 !
 ! H atom: note you need to put the nucleus at one of the foci, pretty bad l=0 energies otherwise
 !         V_potential = -1.d0/(xi+eta)/R_over_two
@@ -44,6 +49,4 @@ z = R_over_two*xi*eta
 !
 ! H2+ molecule  (nuclear repulsion is added in)
 !         V_potential = -2.d0*xi/(xi**2-eta**2)/R_over_two + 1.d0/(2.d0*R_over_two)
-END FUNCTION
-
-
+END SUBROUTINE

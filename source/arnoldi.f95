@@ -67,11 +67,11 @@ COMPLEX(KIND=DBL), ALLOCATABLE :: z(:,:)     ! Array of eigenvectors.  Size = n 
 COMPLEX(KIND=DBL), ALLOCATABLE :: workev(:)  ! Work array of size 2*ncv
 
 ! LAPACK VARIABLES
-INTEGER :: i,j
-COMPLEX(KIND=DBL), ALLOCATABLE :: b(:)       ! zero array used for LU decomposition
+INTEGER :: i
+!COMPLEX(KIND=DBL), ALLOCATABLE :: b(:)       ! zero array used for LU decomposition
 INTEGER, ALLOCATABLE :: IPIV(:)              ! integer array not referenced but could hold pivots
 INTEGER :: icant                             ! Error because it just can't
-CHARACTER :: trans = 'N'                     ! Specifies the linear solver.  Might be a different letter if transposes/hermition congj are used.  See zgetrs
+!CHARACTER :: trans = 'N'                     ! Specifies the linear solver.  Might be a different letter if transposes/hermition congj are used.  See zgetrs
 
 
 ! Affix the input variables to ARPACK variables

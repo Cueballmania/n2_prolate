@@ -35,7 +35,7 @@ REAL(KIND=DBL) :: matcopy(1:numsize,1:numsize)            ! Copy of the matrixin
 INTEGER :: i, ierror
 
 ! DEBUG VARIABLES
-REAL(KIND=DBL) :: tempmat(1:numsize,1:numsize) 
+!REAL(KIND=DBL) :: tempmat(1:numsize,1:numsize) 
 
 ! Define the SVD variables and make a copy of the input matrix
 lwork = 10*numsize
